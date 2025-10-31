@@ -1,3 +1,5 @@
+DC := $(shell command -v docker-compose >/dev/null 2>&1 && echo docker-compose || echo docker compose)
+
 all:
 	@echo "COMMANDS IMPLEMENTED"
 	@echo ""
@@ -48,25 +50,25 @@ build-img:
 
 up:
 	@echo "---------------------------------------"
-	@echo "docker compose up -d"
-	@docker-compose up -d || docker compose up -d
+	@echo "$(DC) up -d"
+	@$(DC) up -d
 	@echo ""
 
 stop:
 	@echo "---------------------------------------"
-	@echo "docker compose stop"
-	@docker-compose stop || docker compose stop
+	@echo "$(DC) stop"
+	@$(DC) stop
 	@echo ""
 
 down:
 	@echo "---------------------------------------"
-	@echo "docker compose down"
-	@docker-compose down || docker compose down
+	@echo "$(DC) down"
+	@$(DC) down
 	@echo ""
 
 app: up
 	@echo "compose-up run app container"
-	@docker-compose run --rm app || docker compose run --rm app
+	@$(DC) run --rm app
 	@echo ""
 
 rm: down
@@ -83,29 +85,29 @@ rm: down
 
 db-create: up
 	@echo "PHOENIX"
-	@docker-compose run app python -c "from src.db_models.utils import create_db; create_db()" || docker compose run app python -c "from src.db_models.utils import create_db; create_db()"
+	@$(DC) run app python -c "from src.db_models.utils import create_db; create_db()"
 	@echo ""
 
 db-create-tables: up
 	@echo "Creating tables"
-	@docker-compose run app python -c "from src.db_models.utils import create_or_drop_all_tables; create_or_drop_all_tables(cmd='create')" || docker compose run app python -c "from src.db_models.utils import create_or_drop_all_tables; create_or_drop_all_tables(cmd='create')"
+	@$(DC) run app python -c "from src.db_models.utils import create_or_drop_all_tables; create_or_drop_all_tables(cmd='create')"
 	@echo ""
 
 db-setup: up
 	@echo "SETUP"
 	@echo "sleeping 40 seconds in order to postgres start-up"
 	@echo "Creating db"
-	@docker-compose run app python -c "from src.db_models.utils import create_db, create_or_drop_all_tables; create_db();create_or_drop_all_tables(cmd='create')" || docker compose run app python -c "from src.db_models.utils import create_db, create_or_drop_all_tables; create_db();create_or_drop_all_tables(cmd='create')"
+	@$(DC) run app python -c "from src.db_models.utils import create_db, create_or_drop_all_tables; create_db();create_or_drop_all_tables(cmd='create')"
 	@echo ""
 
 db-create-minimal-view: up
 	@echo "Create minimal unified view"
-	@docker-compose run app python -c "from src.db_models.create_minimal_view import create_view; create_view()" || docker compose run app python -c "from src.db_models.create_minimal_view import create_view; create_view()"
+	@$(DC) run app python -c "from src.db_models.create_minimal_view import create_view; create_view()"
 	@echo ""
 
 db-phoenix: up
 	@echo "PHOENIX"
-	@docker-compose run app python -c "from src.db_models.utils import phoenix; phoenix()" || docker compose run app python -c "from src.db_models.utils import phoenix; phoenix()"
+	@$(DC) run app python -c "from src.db_models.utils import phoenix; phoenix()"
 	@echo ""
 
 db-enter: up
@@ -113,29 +115,29 @@ db-enter: up
 
 tests: up
 	@echo "compose-up run app & [PYTEST]"
-	@docker-compose run app python -m pytest || docker compose run app python -m pytest
+	@$(DC) run app python -m pytest
 	@echo ""
 
 io-download: up
 	@echo "compose-up run app container & [DOWNLOAD]"
-	@docker-compose run app python src/io/download.py || docker compose run app python src/io/download.py
+	@$(DC) run app python src/io/download.py
 	@echo ""
 
 io-unzip: up
 	@echo "compose-up run app container & [UNZIP]"
-	@docker-compose run app python src/io/unzip.py || docker compose run app python src/io/unzip.py
+	@$(DC) run app python src/io/unzip.py
 	@echo ""
 	@echo "[CREATE JSONS]"
-	@docker-compose run app python src/io/create_jsons_from_csv.py || docker compose run app python src/io/create_jsons_from_csv.py
+	@$(DC) run app python src/io/create_jsons_from_csv.py
 
 io-create-jsons: up
 	@echo "[CREATE JSONS]"
-	@docker-compose run app python src/io/create_jsons_from_csv.py || docker compose run app python src/io/create_jsons_from_csv.py
+	@$(DC) run app python src/io/create_jsons_from_csv.py
 
 
 io-download-and-unzip: up
 	@echo "compose-up run app container & [DOWNLOAD]"
-	@docker-compose run app python src/io/download.py || docker compose run app python src/io/download.py
+	@$(DC) run app python src/io/download.py
 	@echo ""
 	@echo "------------------------"
 	@echo "sleep for 30 seconds to take a breath"
@@ -143,42 +145,42 @@ io-download-and-unzip: up
 	@echo ""
 	@echo "------------------------"
 	@echo "[UNZIP]"
-	@docker-compose run app python src/io/unzip.py || docker compose run app python src/io/unzip.py
+	@$(DC) run app python src/io/unzip.py
 	@echo ""
 	@echo "[CREATE JSONS]"
-	@docker-compose run app python src/io/create_jsons_from_csv.py || docker compose run app python src/io/create_jsons_from_csv.py
+	@$(DC) run app python src/io/create_jsons_from_csv.py
 
 engine-company: up
 	@echo "compose-up run app container & [ENGINE COMPANY]"
-	@docker-compose run app python src/engine/company.py || docker compose run app python src/engine/company.py
+	@$(DC) run app python src/engine/company.py
 	@echo ""
 
 engine-company-tax-regime: up
 	@echo "compose-up run app container & [ENGINE COMPANY TAX REGIME]"
-	@docker-compose run app python src/engine/company_tax_regime.py || docker compose run app python src/engine/company_tax_regime.py
+	@$(DC) run app python src/engine/company_tax_regime.py
 	@echo ""
 
 engine-company-root: up
 	@echo "compose-up run app container & [ENGINE COMPANY ROOT]"
-	@docker-compose run app python src/engine/company_root.py || docker compose run app python src/engine/company_root.py
+	@$(DC) run app python src/engine/company_root.py
 	@echo ""
 
 engine-company-root-simples: up
 	@echo "compose-up run app container & [ENGINE COMPANY ROOT SIMPLES]"
-	@docker-compose run app python src/engine/company_root_simples.py || docker compose run app python src/engine/company_root_simples.py
+	@$(DC) run app python src/engine/company_root_simples.py
 	@echo ""
 
 engine-partners: up
 	@echo "compose-up run app container & [ENGINE PARTNERS]"
-	@docker-compose run app python src/engine/partners.py || docker compose run app python src/engine/partners.py
+	@$(DC) run app python src/engine/partners.py
 	@echo ""
 
 engine-ref-date: up
 	@echo "compose-up run app container & [ENGINE REF DATE]"
-	@docker-compose run app python src/engine/ref_date.py || docker compose run app python src/engine/ref_date.py
+	@$(DC) run app python src/engine/ref_date.py
 	@echo ""
 
 engine-main: up
 	@echo "compose-up run app container & engine main"
-	@docker-compose run app python src/engine/main.py || docker compose run app python src/engine/main.py
+	@$(DC) run app python src/engine/main.py
 	@echo ""

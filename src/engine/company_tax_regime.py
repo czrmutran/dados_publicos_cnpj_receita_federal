@@ -39,6 +39,11 @@ class CompanyTaxRegime(EngineCore):
 
     def parse_file(self, file):
         _, filename = os.path.split(file)
+        # Skip non-CSV data dictionaries (e.g., .xlsx) that are shipped alongside the tax regime files
+        ext = os.path.splitext(filename)[1].lower()
+        if ext in ('.xlsx', '.xls'):
+            print(f"[SKIP] Non-CSV file detected for tax regime: '{filename}'")
+            return
         dict_args_read_csv = self._dict_args_read_csv
         dict_args_read_csv['filepath_or_buffer'] = file
         dict_args_read_csv['names'] = self._cols[:self._n_raw_columns]
@@ -47,27 +52,54 @@ class CompanyTaxRegime(EngineCore):
         dict_args_read_csv['header'] = 1
         start_file = time.time()
         total_rows_file = 0
-        for _df in pd.read_csv(**dict_args_read_csv):
-            start_loop = time.time()
-            # raw columns
-            _df['cnpj'] = _df['cnpj'].str.replace('.', '').str.replace('/', '').str.replace('-', '')
-            _df['cnpj'] = _df['cnpj'].str.zfill(14)
-            _df['cnpj_root'] = _df['cnpj'].str[:8]
-            _df = _df.reindex(columns=self._cols)
-            df_to_database(engine=settings.ENGINE, df=_df, table_name=self._table_name)
-            self._total_rows_global += self._n_rows_chunk
-            total_rows_file += self._n_rows_chunk
-            lasts_this_round = round(time.time() - start_loop, 2)
-            lasts_since_begin_file = round(time.time() - start_file, 2)
-            lasts_since_begin_global = round(time.time() - self._start_time_all_files, 2)
-            dict_status = {
-                'filename': filename,
-                'total_rows_file': total_rows_file,
-                'lasts_this_round': lasts_this_round,
-                'lasts_since_begin_file': lasts_since_begin_file,
-                'lasts_since_begin_global': lasts_since_begin_global
-            }
-            self._display_status(dict_status)
+        try:
+            reader_args = dict_args_read_csv
+            for _df in pd.read_csv(**reader_args):
+                start_loop = time.time()
+                # raw columns
+                _df['cnpj'] = _df['cnpj'].str.replace('.', '').str.replace('/', '').str.replace('-', '')
+                _df['cnpj'] = _df['cnpj'].str.zfill(14)
+                _df['cnpj_root'] = _df['cnpj'].str[:8]
+                _df = _df.reindex(columns=self._cols)
+                df_to_database(engine=settings.ENGINE, df=_df, table_name=self._table_name)
+                self._total_rows_global += self._n_rows_chunk
+                total_rows_file += self._n_rows_chunk
+                lasts_this_round = round(time.time() - start_loop, 2)
+                lasts_since_begin_file = round(time.time() - start_file, 2)
+                lasts_since_begin_global = round(time.time() - self._start_time_all_files, 2)
+                dict_status = {
+                    'filename': filename,
+                    'total_rows_file': total_rows_file,
+                    'lasts_this_round': lasts_this_round,
+                    'lasts_since_begin_file': lasts_since_begin_file,
+                    'lasts_since_begin_global': lasts_since_begin_global
+                }
+                self._display_status(dict_status)
+        except pd.errors.ParserError:
+            # Fallback: some monthly files use semicolon separator and regular header
+            reader_args = dict_args_read_csv.copy()
+            reader_args['sep'] = ';'
+            reader_args['header'] = 0
+            for _df in pd.read_csv(**reader_args):
+                start_loop = time.time()
+                _df['cnpj'] = _df['cnpj'].str.replace('.', '').str.replace('/', '').str.replace('-', '')
+                _df['cnpj'] = _df['cnpj'].str.zfill(14)
+                _df['cnpj_root'] = _df['cnpj'].str[:8]
+                _df = _df.reindex(columns=self._cols)
+                df_to_database(engine=settings.ENGINE, df=_df, table_name=self._table_name)
+                self._total_rows_global += self._n_rows_chunk
+                total_rows_file += self._n_rows_chunk
+                lasts_this_round = round(time.time() - start_loop, 2)
+                lasts_since_begin_file = round(time.time() - start_file, 2)
+                lasts_since_begin_global = round(time.time() - self._start_time_all_files, 2)
+                dict_status = {
+                    'filename': filename,
+                    'total_rows_file': total_rows_file,
+                    'lasts_this_round': lasts_this_round,
+                    'lasts_since_begin_file': lasts_since_begin_file,
+                    'lasts_since_begin_global': lasts_since_begin_global
+                }
+                self._display_status(dict_status)
 
 
 if __name__ == '__main__':
