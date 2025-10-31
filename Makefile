@@ -19,6 +19,7 @@ all:
 	@echo "make db-create ................................. create database (if not exists)"
 	@echo "make db-create-tables .......................... create all tables (if not exists)"
 	@echo "make db-setup .................................. create database and create all tables"
+	@echo "make db-create-minimal-view .................... create view rf_unified_minimal with selected fields"
 	@echo "make db-enter .................................. enter on postgres container"
 	@echo ""
 	@echo "########################################################################################################################"
@@ -95,6 +96,11 @@ db-setup: up
 	@echo "sleeping 40 seconds in order to postgres start-up"
 	@echo "Creating db"
 	@docker-compose run app python -c "from src.db_models.utils import create_db, create_or_drop_all_tables; create_db();create_or_drop_all_tables(cmd='create')"
+	@echo ""
+
+db-create-minimal-view: up
+	@echo "Create minimal unified view"
+	@docker-compose run app python -c "from src.db_models.create_minimal_view import create_view; create_view()"
 	@echo ""
 
 db-phoenix: up
