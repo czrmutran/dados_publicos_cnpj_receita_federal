@@ -27,6 +27,8 @@ all:
 	@echo "make io-download ............................... download files"
 	@echo "make io-unzip .................................. unzip all files"
 	@echo "make io-create-jsons ........................... create jsons"
+	@echo "make io-upload-s3 .............................. upload CSVs to S3"
+	@echo "make io-download-unzip-upload-s3 ............... download, unzip and upload to S3"
 	@echo "make io-download-and-unzip ..................... download and unzip files"
 	@echo "make engine-company ............................ load company data to db"
 	@echo "make engine-company-tax-regime ................. load company tax regime data to db"
@@ -142,6 +144,21 @@ io-download-and-unzip: up
 	@echo "[CREATE JSONS]"
 	@docker-compose run app python src/io/create_jsons_from_csv.py
 
+io-download-unzip-upload-s3: up
+	@echo "compose-up run app container & [DOWNLOAD]"
+	@docker-compose run app python src/io/download.py
+	@echo ""
+	@echo "------------------------"
+	@echo "sleep for 30 seconds to take a breath"
+	@sleep 30
+	@echo ""
+	@echo "------------------------"
+	@echo "[UNZIP]"
+	@docker-compose run app python src/io/unzip.py
+	@echo ""
+	@echo "[UPLOAD S3]"
+	@docker-compose run app python src/io/upload_to_s3.py
+
 engine-company: up
 	@echo "compose-up run app container & [ENGINE COMPANY]"
 	@docker-compose run app python src/engine/company.py
@@ -175,4 +192,13 @@ engine-ref-date: up
 engine-main: up
 	@echo "compose-up run app container & engine main"
 	@docker-compose run app python src/engine/main.py
+	@echo ""
+io-upload-s3: up
+	@echo "[UPLOAD S3]"
+	@docker-compose run app python src/io/upload_to_s3.py
+	@echo ""
+
+io-unzip-s3: up
+	@echo "compose-up run app container & [S3 UNZIP]"
+	@docker-compose run app python src/io/s3_unzip.py
 	@echo ""
